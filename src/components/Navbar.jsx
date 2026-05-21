@@ -1,0 +1,44 @@
+import React from 'react';
+import { Palette, Menu } from 'lucide-react';
+
+function Navbar() {
+  return (
+    <nav className="w-full bg-white/80 backdrop-blur-md border-b border-zinc-100 fixed top-0 left-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-20 items-center">
+          
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 cursor-pointer">
+            <div className="bg-zinc-900 text-white p-2 rounded-lg">
+              <Palette size={20} />
+            </div>
+            <span className="text-xl font-bold tracking-tight text-zinc-950">ArtKaba</span>
+          </div>
+
+          {/* Liens Centraux (Desktop) */}
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-600">
+            <a href="#" className="text-zinc-950 transition-colors">La Galerie</a>
+            <a href="#" className="hover:text-zinc-950 transition-colors">Expositions</a>
+            <a href="#" className="hover:text-zinc-950 transition-colors">À propos</a>
+          </div>
+
+          {/* Bouton CTA */}
+          <div className="flex items-center gap-4">
+            <button className="hidden sm:block text-sm font-semibold text-zinc-900 hover:text-zinc-600 transition-colors cursor-pointer">
+              Se connecter
+            </button>
+            <button className="bg-[#c5a880] hover:bg-[#b3966e] text-white text-sm font-medium px-5 py-2.5 rounded-full transition-all shadow-sm hover:shadow-md cursor-pointer">
+              Espace Étudiant
+            </button>
+            <button className="md:hidden text-zinc-700 p-1">
+              <Menu size={22} />
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+export default Navbar;
