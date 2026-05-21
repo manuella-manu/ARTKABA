@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import Navbar from './components/Navbar';
+import Register from './components/Register';
 import { SlidersHorizontal, ArrowUpRight } from 'lucide-react';
 
 function App() {
+  // État pour gérer la navigation fluide entre la galerie et l'inscription
+  const [view, setView] = useState("gallery"); // "gallery" ou "register"
+  
   const categories = ["Tous", "Peinture", "Sculpture", "Dessin", "Design"];
   const [activeCategory, setActiveCategory] = useState("Tous");
 
+  // Catalogue d'œuvres d'art (style abstrait contemporain garanti sans bugs d'images)
   const artworks = [
     {
       id: 1,
@@ -67,9 +72,15 @@ function App() {
     ? artworks 
     : artworks.filter(art => art.type === activeCategory);
 
+  // CONDITION : Si l'utilisateur demande à voir l'inscription, on court-circuite la galerie
+  if (view === "register") {
+    return <Register onBackToGallery={() => setView("gallery")} />;
+  }
+
   return (
     <div className="w-full min-h-screen bg-[#fafafa] text-zinc-900 antialiased font-light">
-      <Navbar />
+      {/* On passe setView à la Navbar pour lier les actions de clics */}
+      <Navbar onNavigate={setView} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-20">
         
@@ -110,7 +121,7 @@ function App() {
           </div>
         </div>
 
-        {/* Grille de Cartes au Format Paysage (1 colonne sur mobile, 2 sur PC) */}
+        {/* Grille de Cartes au Format Paysage */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
           {filteredArtworks.map((art) => (
             <div 
@@ -145,7 +156,7 @@ function App() {
                   </span>
                 </div>
 
-                {/* Bas de la carte : Séparation fine rectiligne pour les dimensions et prix */}
+                {/* Bas de la carte : Séparation fine rectiligne */}
                 <div className="mt-6 pt-3 border-t border-zinc-100 flex justify-between items-center">
                   <span className="text-xs text-zinc-400 tracking-wide">
                     Dim. {art.size}
