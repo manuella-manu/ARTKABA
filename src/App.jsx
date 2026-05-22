@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from './components/Navbar';
 import Register from './components/Register';
+import StudentDashboard from './components/StudentDashboard';
 import { SlidersHorizontal, ArrowUpRight } from 'lucide-react';
 
 function App() {
@@ -73,8 +74,17 @@ function App() {
     : artworks.filter(art => art.type === activeCategory);
 
   // CONDITION : Si l'utilisateur demande à voir l'inscription, on court-circuite la galerie
+  //  La version correcte dans App.jsx :
   if (view === "register") {
-    return <Register onBackToGallery={() => setView("gallery")} />;
+    return (
+      <Register 
+        onBackToGallery={() => setView("gallery")} 
+        onRegisterSuccess={() => setView("dashboard")} //  IL MANQUAIT CETTE LIGNE !
+      />
+    );
+  }
+  if (view === "dashboard") {
+    return <StudentDashboard onLogout={() => setView("gallery")} />;
   }
 
   return (

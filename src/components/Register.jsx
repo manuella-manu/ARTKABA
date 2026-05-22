@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Upload, ShieldCheck, ArrowRight, X } from 'lucide-react';
 
-function Register({ onBackToGallery }) {
+// On ajoute la prop onRegisterSuccess ici
+function Register({ onBackToGallery, onRegisterSuccess }) {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState("");
 
@@ -31,12 +32,18 @@ function Register({ onBackToGallery }) {
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Plus tard, on mettra la logique d'envoi vers l'API ici
+    // Pour l'instant, on déclenche directement la bascule vers le dashboard !
+    onRegisterSuccess();
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#fafafa] flex flex-col lg:flex-row antialiased font-light pt-20 lg:pt-0">
       
       {/* Partie Gauche : Identité visuelle épurée (Masquée sur mobile) */}
       <div className="hidden lg:flex lg:w-[40%] bg-zinc-950 p-12 flex-col justify-between text-white relative overflow-hidden">
-        {/* Motif de fond minimaliste */}
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-black opacity-50 z-0" />
         
         <div className="relative z-10">
@@ -61,7 +68,7 @@ function Register({ onBackToGallery }) {
         </div>
       </div>
 
-      {/* Partie Droite : Le Formulaire Rectiligne */}
+      {/* Partie Droite : Le Formulaire */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 lg:p-20 z-10">
         <div className="w-full max-w-md bg-white border border-zinc-200/60 p-8 sm:p-10 rounded-lg shadow-[0_4px_25px_-12px_rgba(0,0,0,0.02)]">
           
@@ -70,12 +77,13 @@ function Register({ onBackToGallery }) {
             <p className="text-zinc-400 text-sm mt-1">Remplissez vos accès et soumettez votre pièce d'identité.</p>
           </div>
 
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Champ Nom */}
             <div>
               <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Nom complet</label>
               <input 
                 type="text" 
+                required
                 placeholder="Ex: Mukendi Gloire" 
                 className="w-full bg-[#fafafa] border border-zinc-200 rounded px-4 py-3 text-sm focus:outline-none focus:border-zinc-950 transition-colors font-normal text-zinc-900"
               />
@@ -86,12 +94,13 @@ function Register({ onBackToGallery }) {
               <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Adresse Email</label>
               <input 
                 type="email" 
+                required
                 placeholder="gloire@aba.com" 
                 className="w-full bg-[#fafafa] border border-zinc-200 rounded px-4 py-3 text-sm focus:outline-none focus:border-zinc-950 transition-colors font-normal text-zinc-900"
               />
             </div>
 
-            {/* Zone d'Upload de la Carte d'Étudiant (Rectiligne / Drag & Drop) */}
+            {/* Zone d'Upload de la Carte d'Étudiant */}
             <div>
               <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
                 Carte d'étudiant (Obligatoire)
@@ -119,7 +128,7 @@ function Register({ onBackToGallery }) {
                 {fileName ? (
                   <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded border border-zinc-200 text-xs font-medium text-zinc-800">
                     <span className="truncate max-w-[200px]">{fileName}</span>
-                    <button onClick={() => setFileName("")} className="text-zinc-400 hover:text-zinc-950">
+                    <button type="button" onClick={() => setFileName("")} className="text-zinc-400 hover:text-zinc-950">
                       <X size={14} />
                     </button>
                   </div>
@@ -135,16 +144,17 @@ function Register({ onBackToGallery }) {
               </div>
             </div>
 
-            {/* Bouton Soumettre */}
-            <button className="w-full bg-zinc-950 hover:bg-zinc-900 text-white font-medium py-3.5 rounded transition-all text-sm flex items-center justify-center gap-2 mt-8 shadow-sm cursor-pointer">
+            {/* Bouton Soumettre - Déclenche handleSubmit */}
+            <button type="submit" className="w-full bg-zinc-950 hover:bg-zinc-900 text-white font-medium py-3.5 rounded transition-all text-sm flex items-center justify-center gap-2 mt-8 shadow-sm cursor-pointer">
               Soumettre pour validation <ArrowRight size={16} />
             </button>
 
-            {/* Lien Retour discret */}
+            {/* Lien Retour */}
             <div className="text-center mt-4">
               <button 
+                type="button"
                 onClick={onBackToGallery}
-                className="text-xs text-zinc-400 hover:text-zinc-950 transition-colors cursor-pointer"
+                className="text-xs text-zinc-400 hover:text-zinc-950 transition-colors cursor-pointer bg-transparent border-none"
               >
                 ← Retourner à la galerie
               </button>
