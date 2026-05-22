@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Plus, Wallet, Image, MessageSquare, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
 
-function StudentDashboard({ onLogout }) {
+function StudentDashboard({ onLogout, user }) {
   // Simuler si l'étudiant a payé ses 2$ ou non (change à true pour tester la version activée)
-  const [isActivated, setIsActivated] = useState(false);
+  const [isActivated, setIsActivated] = useState(user?.isActivated || false);
   
   // Liste des œuvres de l'étudiant connecté
   const [myArtworks, setMyArtworks] = useState([
@@ -57,6 +57,14 @@ function StudentDashboard({ onLogout }) {
         {/* En-tête du profil */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-200 pb-6 mb-10">
           <div>
+            <div>
+            <h2 className="text-2xl font-light text-zinc-950 tracking-tight">
+                Bonjour, {user?.nom || "Artiste"}
+            </h2>
+            <p className="text-zinc-400 text-sm mt-0.5">
+                Atelier ArtKaba • Matricule {user?.matricule || "ABA-2026-TEMP"}
+            </p>
+            </div>
             <h2 className="text-2xl font-light text-zinc-950 tracking-tight">Bonjour, Mukendi Gloire</h2>
             <p className="text-zinc-400 text-sm mt-0.5">Atelier Peinture • Matricule ABA-2026-048</p>
           </div>

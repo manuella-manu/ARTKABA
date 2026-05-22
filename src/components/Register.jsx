@@ -5,6 +5,9 @@ import { Upload, ShieldCheck, ArrowRight, X } from 'lucide-react';
 function Register({ onBackToGallery, onRegisterSuccess }) {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [nom, setNom] = useState("");
+  const [email, setEmail] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Gestion du Drag & Drop pour la carte d'étudiant
   const handleDrag = (e) => {
@@ -32,12 +35,43 @@ function Register({ onBackToGallery, onRegisterSuccess }) {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Plus tard, on mettra la logique d'envoi vers l'API ici
-    // Pour l'instant, on déclenche directement la bascule vers le dashboard !
-    onRegisterSuccess();
+   
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setErrorMessage(""); // On réinitialise l'erreur à chaque tentative
+
+  // Préparation de l'objet étudiant à envoyer au Backend
+  const etudiantData = {
+    nom: nom,
+    email: email,
+    carteEtudiantUrl: fileName || "carte_fictive.pdf" // En attendant de gérer le vrai upload de fichier
   };
+
+  try {
+    const response = await fetch("http://localhost:8080/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(etudiantData),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Étudiant créé avec succès dans MySQL !", data);
+      
+      // Succès ! On redirige l'étudiant vers son dashboard
+      onRegisterSuccess();
+    } else {
+      // Si Spring Boot renvoie une erreur (ex: Code 400 Bad Request)
+      const errorText = await response.text();
+      setErrorMessage(errorText);
+    }
+  } catch (error) {
+    console.error("Erreur réseau :", error);
+    setErrorMessage("Impossible de joindre le serveur. Vérifie que Spring Boot est démarré.");
+  }
+};
 
   return (
     <div className="w-full min-h-screen bg-[#fafafa] flex flex-col lg:flex-row antialiased font-light pt-20 lg:pt-0">
@@ -84,6 +118,8 @@ function Register({ onBackToGallery, onRegisterSuccess }) {
               <input 
                 type="text" 
                 required
+                value={nom}
+                onChange={(e) => setNom(e.target.value)}
                 placeholder="Ex: Mukendi Gloire" 
                 className="w-full bg-[#fafafa] border border-zinc-200 rounded px-4 py-3 text-sm focus:outline-none focus:border-zinc-950 transition-colors font-normal text-zinc-900"
               />
@@ -95,6 +131,8 @@ function Register({ onBackToGallery, onRegisterSuccess }) {
               <input 
                 type="email" 
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="gloire@aba.com" 
                 className="w-full bg-[#fafafa] border border-zinc-200 rounded px-4 py-3 text-sm focus:outline-none focus:border-zinc-950 transition-colors font-normal text-zinc-900"
               />
@@ -143,6 +181,9 @@ function Register({ onBackToGallery, onRegisterSuccess }) {
                 )}
               </div>
             </div>
+            {errorMessage && (
+              <p className="text-red-500 text-xs font-normal mt-2">{errorMessage}</p>
+            )}
 
             {/* Bouton Soumettre - Déclenche handleSubmit */}
             <button type="submit" className="w-full bg-zinc-950 hover:bg-zinc-900 text-white font-medium py-3.5 rounded transition-all text-sm flex items-center justify-center gap-2 mt-8 shadow-sm cursor-pointer">
