@@ -1,29 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Wallet, Image, MessageSquare, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
+import AddArtworkModal from './AddArtworkModal';
 
 function StudentDashboard({ onLogout, user }) {
-  // Simuler si l'étudiant a payé ses 2$ ou non (change à true pour tester la version activée)
   const [isActivated, setIsActivated] = useState(user?.isActivated || false);
-  
-  // Liste des œuvres de l'étudiant connecté
-  const [myArtworks, setMyArtworks] = useState([
-    { id: 1, title: "Regard d'Ébène", type: "Peinture", size: "120 x 90 cm", price: "150 $", status: "Publié" },
-    { id: 2, title: "Symphonie Temporelle", type: "Peinture", size: "80 x 80 cm", price: "200 $", status: "Publié" },
-  ]);
+  const [myArtworks, setMyArtworks] = useState([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Charger les œuvres de l'étudiant depuis MySQL au démarrage
+  useEffect(() => {
+    if (user?.id) {
+      fetch(`http://localhost:8080/api/oeuvres/etudiant/${user.id}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error("Impossible de charger les œuvres");
+        })
+        .then((data) => {
+          setMyArtworks(data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error(err);
+          setLoading(false);
+        });
+    }
+  }, [user?.id]);
+
+  // Ajouter la nouvelle œuvre créée par Spring Boot à la liste locale
+  const handleArtworkAdded = (nouvelleOeuvre) => {
+    setMyArtworks((prev) => [nouvelleOeuvre, ...prev]);
+  };
 
   return (
     <div className="w-full min-h-screen bg-[#fafafa] text-zinc-900 antialiased font-light flex flex-col lg:flex-row">
       
-      {/* Barre Latérale de l'Étudiant (Design Rectiligne) */}
+      {/* Barre Latérale de l'Étudiant */}
       <aside className="w-full lg:w-64 bg-white border-b lg:border-b-0 lg:border-r border-zinc-200 p-6 flex flex-col justify-between flex-shrink-0">
         <div className="space-y-8">
-          {/* Logo & Rôle */}
           <div>
             <h3 className="text-xl font-bold tracking-tight text-zinc-950">ArtKaba</h3>
             <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-400 block mt-1">Espace Artiste</span>
           </div>
 
-          {/* Navigation interne */}
           <nav className="space-y-2">
             <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded bg-zinc-950 text-white font-medium text-left">
               <Image size={16} /> Mes Œuvres
@@ -42,7 +61,6 @@ function StudentDashboard({ onLogout, user }) {
           </nav>
         </div>
 
-        {/* Bouton Déconnexion */}
         <button 
           onClick={onLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50/50 rounded transition-colors text-left mt-8 cursor-pointer"
@@ -54,22 +72,18 @@ function StudentDashboard({ onLogout, user }) {
       {/* Contenu Principal du Dashboard */}
       <main className="flex-1 p-6 sm:p-10 lg:p-12">
         
-        {/* En-tête du profil */}
+        {/* En-tête du profil (Propre et Dynamique) */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-200 pb-6 mb-10">
           <div>
-            <div>
             <h2 className="text-2xl font-light text-zinc-950 tracking-tight">
-                Bonjour, {user?.nom || "Artiste"}
+              Bonjour, {user?.nom || "Artiste"}
             </h2>
             <p className="text-zinc-400 text-sm mt-0.5">
-                Atelier ArtKaba • Matricule {user?.matricule || "ABA-2026-TEMP"}
+              Atelier d'Art Privé • Matricule {user?.matricule || "ABA-2026-TEMP"}
             </p>
-            </div>
-            <h2 className="text-2xl font-light text-zinc-950 tracking-tight">Bonjour, Mukendi Gloire</h2>
-            <p className="text-zinc-400 text-sm mt-0.5">Atelier Peinture • Matricule ABA-2026-048</p>
           </div>
           
-          {/* Badge de Statut du Compte */}
+          {/* Badge de Statut */}
           <div>
             {isActivated ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
@@ -83,7 +97,7 @@ function StudentDashboard({ onLogout, user }) {
           </div>
         </div>
 
-        {/* CONDITION : Si le compte n'est pas activé, on affiche le bloc de paiement des 2$ */}
+        {/* Bloc d'activation si le compte n'est pas actif */}
         {!isActivated && (
           <div className="bg-white border border-zinc-200/80 rounded-lg p-6 sm:p-8 mb-10 max-w-3xl shadow-[0_4px_20px_-6px_rgba(0,0,0,0.01)]">
             <div className="flex flex-col sm:flex-row items-start gap-5">
@@ -97,14 +111,12 @@ function StudentDashboard({ onLogout, user }) {
                     Pour débloquer l'accès complet, ajouter de nouvelles œuvres et répondre aux messages directs des acheteurs potentiels, vous devez vous acquitter des frais d'abonnement annuels de <strong>2 $ (5 000 CDF)</strong>.
                   </p>
                 </div>
-                
-                {/* Simulation de bouton de paiement Mobile Money */}
                 <div className="pt-2">
                   <button 
-                    onClick={() => setIsActivated(true)} // Au clic, on simule la réussite du paiement
+                    onClick={() => setIsActivated(true)} 
                     className="bg-[#c5a880] hover:bg-[#b3966e] text-white text-xs font-medium px-5 py-3 rounded transition-all shadow-sm cursor-pointer"
                   >
-                    Payer 2 $ via Mobile Money (IllicoCash / M-pessa / Orange-Money)
+                    Payer 2 $ via Mobile Money (IllicoCash / M-Pesa / Orange Money)
                   </button>
                 </div>
               </div>
@@ -117,6 +129,7 @@ function StudentDashboard({ onLogout, user }) {
           <div className="flex justify-between items-center">
             <h4 className="text-lg font-normal text-zinc-950 tracking-tight">Vos créations en ligne</h4>
             <button 
+              onClick={() => setIsAddModalOpen(true)}
               disabled={!isActivated}
               className={`inline-flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded transition-all shadow-sm ${
                 isActivated 
@@ -128,7 +141,7 @@ function StudentDashboard({ onLogout, user }) {
             </button>
           </div>
 
-          {/* Tableau horizontal rectiligne des œuvres */}
+          {/* Tableau horizontal des œuvres */}
           <div className="bg-white border border-zinc-200/60 rounded-lg overflow-hidden">
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left border-collapse">
@@ -142,19 +155,29 @@ function StudentDashboard({ onLogout, user }) {
                   </tr>
                 </thead>
                 <tbody className="text-sm divide-y divide-zinc-100 font-normal text-zinc-700">
-                  {myArtworks.map((art) => (
-                    <tr key={art.id} className="hover:bg-[#fafafa]/50 transition-colors">
-                      <td className="p-4 text-zinc-950 font-medium">{art.title}</td>
-                      <td className="p-4 text-zinc-500">{art.type}</td>
-                      <td className="p-4 text-zinc-400">{art.size}</td>
-                      <td className="p-4 text-zinc-950 font-medium">{art.price}</td>
-                      <td className="p-4">
-                        <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-zinc-100 text-zinc-800">
-                          {art.status}
-                        </span>
-                      </td>
+                  {loading ? (
+                    <tr>
+                      <td colSpan="5" className="p-8 text-center text-zinc-400 text-xs">Chargement de votre collection...</td>
                     </tr>
-                  ))}
+                  ) : myArtworks.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="p-8 text-center text-zinc-400 text-xs">Aucune œuvre indexée pour le moment.</td>
+                    </tr>
+                  ) : (
+                    myArtworks.map((art) => (
+                      <tr key={art.id} className="hover:bg-[#fafafa]/50 transition-colors">
+                        <td className="p-4 text-zinc-950 font-medium">{art.titre}</td>
+                        <td className="p-4 text-zinc-500">{art.categorie}</td>
+                        <td className="p-4 text-zinc-400">{art.dimensions}</td>
+                        <td className="p-4 text-zinc-950 font-medium">{art.prix}</td>
+                        <td className="p-4">
+                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-100">
+                            En Ligne
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -162,6 +185,14 @@ function StudentDashboard({ onLogout, user }) {
         </div>
 
       </main>
+
+      {/* Modale d'ajout d'œuvre */}
+      <AddArtworkModal 
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        etudiantId={user?.id}
+        onArtworkAdded={handleArtworkAdded}
+      />
     </div>
   );
 }
