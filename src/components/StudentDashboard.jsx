@@ -3,6 +3,7 @@ import { Plus, Wallet, Image, MessageSquare, CheckCircle, AlertCircle, LogOut } 
 import AddArtworkModal from './AddArtworkModal';
 
 function StudentDashboard({ onLogout, user }) {
+  // L'état initial dépend du profil utilisateur reçu de Spring Boot
   const [isActivated, setIsActivated] = useState(user?.isActivated || false);
   const [myArtworks, setMyArtworks] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -27,6 +28,36 @@ function StudentDashboard({ onLogout, user }) {
     }
   }, [user?.id]);
 
+  // Fonction déclenchée par le bouton de paiement
+  const handlePayerFrais = async () => {
+    if (!user || !user.id) return;
+
+    try {
+      // 1. Mise à jour dans MySQL via Spring Boot
+      const response = await fetch(`http://localhost:8080/api/etudiants/${user.id}/activer`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
+
+     if (response.ok) {
+        setIsActivated(true);
+        if (user) {
+          user.isActivated = true; 
+          // AJOUTE CETTE LIGNE : On met à jour le cache du navigateur avec le statut actif
+          localStorage.setItem("artkaba_user", JSON.stringify(user));
+        }
+        console.log("Paiement validé : Accès messagerie et ajout d'œuvres débloqués !");
+      }
+      else {
+        console.error("Le serveur a refusé l'activation. Vérifie ton endpoint Java.");
+      }
+    } catch (error) {
+      console.error("Erreur réseau lors de la tentative d'activation :", error);
+    }
+  };
+
   // Ajouter la nouvelle œuvre créée par Spring Boot à la liste locale
   const handleArtworkAdded = (nouvelleOeuvre) => {
     setMyArtworks((prev) => [nouvelleOeuvre, ...prev]);
@@ -47,16 +78,26 @@ function StudentDashboard({ onLogout, user }) {
             <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded bg-zinc-950 text-white font-medium text-left">
               <Image size={16} /> Mes Œuvres
             </button>
+            
+            {/* CORRECTION MESSAGERIE : Devient cliquable et change de style dès que isActivated passe à true */}
             <button 
               disabled={!isActivated}
-              className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded text-left ${
-                isActivated ? "text-zinc-600 hover:bg-zinc-50 cursor-pointer" : "text-zinc-300 cursor-not-allowed"
+              onClick={() => isActivated && alert("Ouverture de la messagerie...")} // Logique de clic future
+              className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded text-left transition-all ${
+                isActivated 
+                  ? "text-zinc-900 hover:bg-zinc-50 cursor-pointer font-normal" 
+                  : "text-zinc-300 cursor-not-allowed bg-transparent"
               }`}
             >
               <div className="flex items-center gap-3">
-                <MessageSquare size={16} /> Messages
+                <MessageSquare size={16} className={isActivated ? "text-zinc-900" : "text-zinc-300"} /> 
+                Messages
               </div>
-              {!isActivated && <span className="text-[9px] bg-zinc-100 text-zinc-400 px-1.5 py-0.5 rounded font-bold">Bloqué</span>}
+              {!isActivated && (
+                <span className="text-[9px] bg-zinc-100 text-zinc-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Bloqué
+                </span>
+              )}
             </button>
           </nav>
         </div>
@@ -72,7 +113,7 @@ function StudentDashboard({ onLogout, user }) {
       {/* Contenu Principal du Dashboard */}
       <main className="flex-1 p-6 sm:p-10 lg:p-12">
         
-        {/* En-tête du profil (Propre et Dynamique) */}
+        {/* En-tête du profil */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-200 pb-6 mb-10">
           <div>
             <h2 className="text-2xl font-light text-zinc-950 tracking-tight">
@@ -83,10 +124,10 @@ function StudentDashboard({ onLogout, user }) {
             </p>
           </div>
           
-          {/* Badge de Statut */}
+          {/* Badge de Statut Dynamique */}
           <div>
             {isActivated ? (
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full animate-fade-in">
                 <CheckCircle size={14} /> Compte Actif
               </span>
             ) : (
@@ -97,7 +138,7 @@ function StudentDashboard({ onLogout, user }) {
           </div>
         </div>
 
-        {/* Bloc d'activation si le compte n'est pas actif */}
+        {/* Bloc d'activation : Disparaît automatiquement de l'écran dès que isActivated === true */}
         {!isActivated && (
           <div className="bg-white border border-zinc-200/80 rounded-lg p-6 sm:p-8 mb-10 max-w-3xl shadow-[0_4px_20px_-6px_rgba(0,0,0,0.01)]">
             <div className="flex flex-col sm:flex-row items-start gap-5">
@@ -113,7 +154,7 @@ function StudentDashboard({ onLogout, user }) {
                 </div>
                 <div className="pt-2">
                   <button 
-                    onClick={() => setIsActivated(true)} 
+                    onClick={handlePayerFrais} 
                     className="bg-[#c5a880] hover:bg-[#b3966e] text-white text-xs font-medium px-5 py-3 rounded transition-all shadow-sm cursor-pointer"
                   >
                     Payer 2 $ via Mobile Money (IllicoCash / M-Pesa / Orange Money)
@@ -128,6 +169,8 @@ function StudentDashboard({ onLogout, user }) {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h4 className="text-lg font-normal text-zinc-950 tracking-tight">Vos créations en ligne</h4>
+            
+            {/* Bouton d'ajout : Se débloque visuellement et structurellement */}
             <button 
               onClick={() => setIsAddModalOpen(true)}
               disabled={!isActivated}
@@ -192,7 +235,7 @@ function StudentDashboard({ onLogout, user }) {
         onClose={() => setIsAddModalOpen(false)}
         etudiantId={user?.id}
         onArtworkAdded={handleArtworkAdded}
-      />
+      /> 
     </div>
   );
 }

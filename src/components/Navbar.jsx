@@ -1,7 +1,6 @@
 import React from 'react';
 import { Palette, Menu } from 'lucide-react';
 
-// On ajoute "user" dans les propriétés reçues
 function Navbar({ onNavigate, onOpenLogin, user }) {
   
   const handleEspaceEtudiantClick = () => {
@@ -15,7 +14,8 @@ function Navbar({ onNavigate, onOpenLogin, user }) {
   };
 
   return (
-    <nav className="w-full bg-white/80 backdrop-blur-md border-b border-zinc-100 fixed top-0 left-0 z-50">
+    /* CORRECTION : On remplace 'fixed top-0 left-0 z-50' par un positionnement normal + bordure subtile */
+    <nav className="w-full bg-white border-b border-zinc-100 sticky top-0 z-50 backdrop-blur-md bg-white/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           
