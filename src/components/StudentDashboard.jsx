@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Wallet, Image, MessageSquare, CheckCircle, AlertCircle, LogOut, Mail } from 'lucide-react';
+import { Plus, Wallet, Image, MessageSquare, CheckCircle, AlertCircle, LogOut, Mail, Edit2, Trash2 } from 'lucide-react';
 import AddArtworkModal from './AddArtworkModal';
 
 function StudentDashboard({ onLogout, user }) {
@@ -66,9 +66,13 @@ function StudentDashboard({ onLogout, user }) {
 
       if (response.ok) {
         setIsActivated(true);
-        if (user) {
-          user.isActivated = true; 
-          localStorage.setItem("artkaba_user", JSON.stringify(user));
+        
+        // Correction de la persistance de l'état d'activation dans le cache local
+        const cachedUser = localStorage.getItem("artkaba_user");
+        if (cachedUser) {
+          const updatedUser = JSON.parse(cachedUser);
+          updatedUser.isActivated = true;
+          localStorage.setItem("artkaba_user", JSON.stringify(updatedUser));
         }
         console.log("Paiement validé : Accès messagerie et ajout d'œuvres débloqués !");
       } else {
@@ -82,6 +86,53 @@ function StudentDashboard({ onLogout, user }) {
   // Ajouter la nouvelle œuvre créée par Spring Boot à la liste locale
   const handleArtworkAdded = (nouvelleOeuvre) => {
     setMyArtworks((prev) => [nouvelleOeuvre, ...prev]);
+  };
+
+  // --- NOUVEAU : SUPPRIMER UNE OEUVRE ---
+  const handleDeleteArtwork = async (id) => {
+    if (window.confirm("Es-tu sûr de vouloir retirer cette œuvre de la galerie ?")) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/oeuvres/delete/${id}`, {
+          method: "DELETE",
+        });
+        if (response.ok) {
+          // Filtrage local pour faire disparaître l'élément instantanément
+          setMyArtworks(myArtworks.filter(art => art.id !== id));
+        } else {
+          console.error("Erreur lors de la suppression sur le serveur.");
+        }
+      } catch (error) {
+        console.error("Erreur réseau lors de la suppression :", error);
+      }
+    }
+  };
+
+  // --- NOUVEAU : MODIFIER UNE OEUVRE (Via prompts de test) ---
+  const handleEditArtwork = async (art) => {
+    const nouveauTitre = window.prompt("Modifier le titre de l'œuvre :", art.titre);
+    const nouveauPrix = window.prompt("Modifier le prix d'exposition :", art.prix);
+
+    if (nouveauTitre !== null && nouveauPrix !== null) {
+      const updatedData = { ...art, titre: nouveauTitre, prix: nouveauPrix };
+
+      try {
+        const response = await fetch(`http://localhost:8080/api/oeuvres/update/${art.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedData)
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          // Remplacement dynamique de l'ancienne œuvre par la nouvelle version modifiée
+          setMyArtworks(myArtworks.map(a => a.id === art.id ? result : a));
+        } else {
+          console.error("Le serveur a refusé la modification.");
+        }
+      } catch (error) {
+        console.error("Erreur réseau lors de la modification :", error);
+      }
+    }
   };
 
   return (
@@ -226,16 +277,17 @@ function StudentDashboard({ onLogout, user }) {
                       <th className="p-4 font-medium">Dimensions</th>
                       <th className="p-4 font-medium">Prix d'exposition</th>
                       <th className="p-4 font-medium">Statut</th>
+                      <th className="p-4 font-medium">Actions</th> {/* AJOUT : Colonne actions */}
                     </tr>
                   </thead>
                   <tbody className="text-sm divide-y divide-zinc-100 font-normal text-zinc-700">
                     {loading ? (
                       <tr>
-                        <td colSpan="5" className="p-8 text-center text-zinc-400 text-xs">Chargement de votre collection...</td>
+                        <td colSpan="6" className="p-8 text-center text-zinc-400 text-xs">Chargement de votre collection...</td>
                       </tr>
                     ) : myArtworks.length === 0 ? (
                       <tr>
-                        <td colSpan="5" className="p-8 text-center text-zinc-400 text-xs">Aucune œuvre indexée pour le moment.</td>
+                        <td colSpan="6" className="p-8 text-center text-zinc-400 text-xs">Aucune œuvre indexée pour le moment.</td>
                       </tr>
                     ) : (
                       myArtworks.map((art) => (
@@ -248,6 +300,25 @@ function StudentDashboard({ onLogout, user }) {
                             <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-100">
                               En Ligne
                             </span>
+                          </td>
+                          {/* AJOUT : Boutons interactifs d'édition et de suppression */}
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <button 
+                                onClick={() => handleEditArtwork(art)}
+                                title="Modifier l'œuvre"
+                                className="text-zinc-400 hover:text-zinc-950 transition-colors cursor-pointer"
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteArtwork(art.id)}
+                                title="Supprimer l'œuvre"
+                                className="text-zinc-400 hover:text-red-600 transition-colors cursor-pointer"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -276,16 +347,25 @@ function StudentDashboard({ onLogout, user }) {
                     key={msg.id} 
                     className="bg-white border border-zinc-200/60 rounded-lg p-5 transition-all hover:border-zinc-300 shadow-[0_2px_12px_-5px_rgba(0,0,0,0.01)]"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-100 text-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-zinc-100 text-xs">
                       <div>
                         <span className="font-medium text-zinc-950 text-sm block sm:inline mr-2">{msg.expediteurNom}</span>
                         <span className="text-zinc-400 font-normal">{`<${msg.expediteurEmail}>`}</span>
                       </div>
-                      <span className="text-zinc-400 font-normal">
-                        {new Date(msg.dateEnvoi).toLocaleDateString('fr-FR', {
-                          day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'
-                        })}
-                      </span>
+                      <div className="flex items-center gap-4 self-end sm:self-auto">
+                        <span className="text-zinc-400 font-normal">
+                          {new Date(msg.dateEnvoi).toLocaleDateString('fr-FR', {
+                            day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'
+                          })}
+                        </span>
+                        {/* AJOUT : Bouton Répondre (Option mailto sécurisée et rapide) */}
+                        <a 
+                          href={`mailto:${msg.expediteurEmail}?subject=ArtKaba - Suite à votre message concernant mon œuvre`}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-600 bg-zinc-100 hover:bg-zinc-950 hover:text-white px-2.5 py-1 rounded transition-all"
+                        >
+                          Répondre
+                        </a>
+                      </div>
                     </div>
                     <div className="pt-3 text-sm text-zinc-600 leading-relaxed font-normal whitespace-pre-line">
                       {msg.contenu}
