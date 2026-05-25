@@ -3,17 +3,16 @@ import Navbar from './components/Navbar';
 import Register from './components/Register';
 import StudentDashboard from './components/StudentDashboard';
 import LoginModal from "./components/LoginModal";
-import { ArrowUpRight } from 'lucide-react';
+import ContactModal from "./components/ContactModal"; // Intégration de la modale de messagerie
+import { Mail } from 'lucide-react';
 
 function App() {
   // 1. GESTION DES ÉTATS 
-  // Initialisation dynamique : On regarde d'abord si un utilisateur est déjà sauvegardé en cache
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("artkaba_user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
   
-  // Si un utilisateur était déjà là, on va directement sur son dashboard, sinon sur la galerie
   const [view, setView] = useState(() => {
     const savedUser = localStorage.getItem("artkaba_user");
     return savedUser ? "dashboard" : "gallery";
@@ -21,6 +20,8 @@ function App() {
 
   const [activeCategory, setActiveCategory] = useState("Tous");
   const [isLoginOpen, setIsLoginOpen] = useState(false); 
+  const [selectedArtwork, setSelectedArtwork] = useState(null); // Stocke l'œuvre à contacter
+  const [isContactOpen, setIsContactOpen] = useState(false); // État d'ouverture de la modale contact
   const [artworks, setArtworks] = useState([]); 
   const [loading, setLoading] = useState(true);
 
@@ -46,24 +47,27 @@ function App() {
       });
   }, [view]); 
 
-  // Fonction utilitaire pour connecter l'utilisateur et sauvegarder sa session
   const handleLoginSuccess = (etudiantData) => {
     setUser(etudiantData);
-    localStorage.setItem("artkaba_user", JSON.stringify(etudiantData)); // Sauvegarde locale
+    localStorage.setItem("artkaba_user", JSON.stringify(etudiantData)); 
     setView("dashboard");
   };
 
-  // Fonction utilitaire pour déconnecter proprement
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem("artkaba_user"); // Nettoyage du cache
+    localStorage.removeItem("artkaba_user"); 
     setView("gallery");
   };
 
-  // Filtrage basé sur les catégories
   const filteredArtworks = activeCategory === "Tous" 
     ? artworks 
     : artworks.filter(art => art.categorie === activeCategory);
+
+  // Déclencheur pour ouvrir le formulaire de contact vers l'artiste
+  const handleOpenContact = (artwork) => {
+    setSelectedArtwork(artwork);
+    setIsContactOpen(true);
+  };
 
   // ==========================================
   // ROUTING DU DASHBOARD
@@ -80,7 +84,7 @@ function App() {
     return (
       <StudentDashboard 
         user={user} 
-        onLogout={handleLogout} // Utilise la nouvelle fonction de déconnexion globale
+        onLogout={handleLogout} 
       />
     );
   }
@@ -97,12 +101,12 @@ function App() {
       {view === "register" ? (
         <Register 
           onBackToGallery={() => setView("gallery")} 
-          onRegisterSuccess={handleLoginSuccess} // Utilise la fonction de persistance
+          onRegisterSuccess={handleLoginSuccess} 
         />
       ) : (
         /* VUE GALERIE PUBLIQUE */
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20">
-          {/* ... Reste de ton code de la galerie (Inchangé) ... */}
+          
           <div className="max-w-3xl mb-20">
             <p className="text-xs font-medium uppercase tracking-widest text-[#c5a880] mb-3">
               Exposition Permanente • Académie des Beaux-Arts
@@ -133,7 +137,7 @@ function App() {
             <div className="text-xs tracking-wider text-zinc-400 font-medium uppercase">[{filteredArtworks.length} indexés]</div>
           </div>
 
-          {/* Grille de cartes avec affichage des vraies images */}
+          {/* Grille de cartes */}
           {loading ? (
             <div className="text-center py-20 text-zinc-400 text-sm">
               Mise en place de la galerie d'art...
@@ -149,7 +153,7 @@ function App() {
                   key={art.id} 
                   className="group flex flex-col sm:flex-row bg-white border border-zinc-200/60 p-4 rounded-lg transition-all duration-300 hover:border-zinc-300 hover:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.02)]"
                 >
-                  {/* CORRECTION ZONE IMAGE : On passe d'un dégradé CSS à une vraie image */}
+                  {/* Zone Image */}
                   <div className="w-full sm:w-48 aspect-[3/2] sm:aspect-square md:aspect-[4/3] flex-shrink-0 rounded bg-zinc-50 overflow-hidden relative border border-zinc-100">
                     {art.imageUrl ? (
                       <img 
@@ -157,13 +161,11 @@ function App() {
                         alt={art.titre}
                         className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                         onError={(e) => {
-                          // Remplacement de secours si l'image physique est introuvable sur le disque dur
                           e.target.onerror = null; 
                           e.target.src = "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=500&auto=format&fit=crop";
                         }}
                       />
                     ) : (
-                      // Fallback si le champ imageUrl est vide ou null en base de données
                       <div className="w-full h-full bg-gradient-to-r from-zinc-100 to-zinc-200 flex items-center justify-center text-zinc-400">
                         <span className="text-xs font-normal">Aucun visuel</span>
                       </div>
@@ -173,7 +175,7 @@ function App() {
                     </div>
                   </div>
 
-                  {/* Reste des informations de la carte */}
+                  {/* Informations de la carte */}
                   <div className="flex flex-col justify-between flex-1 mt-4 sm:mt-0 sm:pl-6 py-1">
                     <div className="flex justify-between items-start gap-4">
                       <div>
@@ -184,9 +186,15 @@ function App() {
                           par {art.etudiant?.nom || "Artiste Anonyme"}
                         </p>
                       </div>
-                      <span className="text-zinc-300 group-hover:text-zinc-950 transition-colors duration-300 mt-1">
-                        <ArrowUpRight size={18} />
-                      </span>
+                      
+                      {/* AJUSTEMENT : Bouton enveloppe épuré pour déclencher le formulaire */}
+                      <button 
+                        onClick={() => handleOpenContact(art)}
+                        title="Contacter l'artiste"
+                        className="text-zinc-300 hover:text-zinc-950 hover:bg-zinc-50 p-2 rounded-full transition-all duration-300 mt-1 cursor-pointer"
+                      >
+                        <Mail size={18} />
+                      </button>
                     </div>
 
                     <div className="mt-6 pt-3 border-t border-zinc-100 flex justify-between items-center">
@@ -205,10 +213,18 @@ function App() {
         </main>
       )}
 
+      {/* Modale d'authentification */}
       <LoginModal 
         isOpen={isLoginOpen} 
         onClose={() => setIsLoginOpen(false)} 
-        onLoginSuccess={handleLoginSuccess} // Utilise la fonction de persistance
+        onLoginSuccess={handleLoginSuccess} 
+      />
+
+      {/* Modale d'envoi de messages aux artistes */}
+      <ContactModal 
+        isOpen={isContactOpen}
+        onClose={() => setIsContactOpen(false)}
+        artwork={selectedArtwork}
       />
     </div>
   );
