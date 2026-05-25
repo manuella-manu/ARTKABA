@@ -133,27 +133,69 @@ function App() {
             <div className="text-xs tracking-wider text-zinc-400 font-medium uppercase">[{filteredArtworks.length} indexés]</div>
           </div>
 
-          {/* Grille */}
+          {/* Grille de cartes avec affichage des vraies images */}
           {loading ? (
-            <div className="text-center py-20 text-zinc-400 text-sm">Mise en place de la galerie d'art...</div>
+            <div className="text-center py-20 text-zinc-400 text-sm">
+              Mise en place de la galerie d'art...
+            </div>
           ) : filteredArtworks.length === 0 ? (
-            <div className="text-center py-20 text-zinc-400 text-sm">Aucune œuvre disponible.</div>
+            <div className="text-center py-20 text-zinc-400 text-sm">
+              Aucune œuvre disponible dans cette catégorie pour le moment.
+            </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
               {filteredArtworks.map((art) => (
-                <div key={art.id} className="group flex flex-col sm:flex-row bg-white border border-zinc-200/60 p-4 rounded-lg transition-all duration-300 hover:border-zinc-300 hover:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.02)]">
-                  <div className="w-full sm:w-48 aspect-[3/2] sm:aspect-square md:aspect-[4/3] flex-shrink-0 rounded bg-zinc-100 overflow-hidden relative">
-                    <div className={`w-full h-full ${art.bgStyle || 'bg-gradient-to-r from-zinc-900 to-stone-800'}`} />
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider text-zinc-600">{art.categorie}</div>
-                  </div>
-                  <div className="flex flex-col justify-between flex-1 mt-4 sm:mt-0 sm:pl-6 py-1">
-                    <div>
-                      <h4 className="font-normal text-zinc-950 text-lg tracking-tight group-hover:text-[#c5a880]">{art.titre}</h4>
-                      <p className="text-zinc-400 text-sm mt-0.5">par {art.etudiant?.nom || "Artiste Anonyme"}</p>
+                <div 
+                  key={art.id} 
+                  className="group flex flex-col sm:flex-row bg-white border border-zinc-200/60 p-4 rounded-lg transition-all duration-300 hover:border-zinc-300 hover:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.02)]"
+                >
+                  {/* CORRECTION ZONE IMAGE : On passe d'un dégradé CSS à une vraie image */}
+                  <div className="w-full sm:w-48 aspect-[3/2] sm:aspect-square md:aspect-[4/3] flex-shrink-0 rounded bg-zinc-50 overflow-hidden relative border border-zinc-100">
+                    {art.imageUrl ? (
+                      <img 
+                        src={`http://localhost:8080${art.imageUrl}`} 
+                        alt={art.titre}
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                        onError={(e) => {
+                          // Remplacement de secours si l'image physique est introuvable sur le disque dur
+                          e.target.onerror = null; 
+                          e.target.src = "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=500&auto=format&fit=crop";
+                        }}
+                      />
+                    ) : (
+                      // Fallback si le champ imageUrl est vide ou null en base de données
+                      <div className="w-full h-full bg-gradient-to-r from-zinc-100 to-zinc-200 flex items-center justify-center text-zinc-400">
+                        <span className="text-xs font-normal">Aucun visuel</span>
+                      </div>
+                    )}
+                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider text-zinc-600 border border-zinc-200/20">
+                      {art.categorie}
                     </div>
+                  </div>
+
+                  {/* Reste des informations de la carte */}
+                  <div className="flex flex-col justify-between flex-1 mt-4 sm:mt-0 sm:pl-6 py-1">
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <h4 className="font-normal text-zinc-950 text-lg tracking-tight group-hover:text-[#c5a880] transition-colors duration-300">
+                          {art.titre}
+                        </h4>
+                        <p className="text-zinc-400 text-sm mt-0.5 font-normal">
+                          par {art.etudiant?.nom || "Artiste Anonyme"}
+                        </p>
+                      </div>
+                      <span className="text-zinc-300 group-hover:text-zinc-950 transition-colors duration-300 mt-1">
+                        <ArrowUpRight size={18} />
+                      </span>
+                    </div>
+
                     <div className="mt-6 pt-3 border-t border-zinc-100 flex justify-between items-center">
-                      <span className="text-xs text-zinc-400">Dim. {art.dimensions}</span>
-                      <span className="text-base font-medium text-zinc-950">{art.prix}</span>
+                      <span className="text-xs text-zinc-400 tracking-wide">
+                        Dim. {art.dimensions}
+                      </span>
+                      <span className="text-base font-medium tracking-tight text-zinc-950">
+                        {art.prix}
+                      </span>
                     </div>
                   </div>
                 </div>  

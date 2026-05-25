@@ -1,55 +1,70 @@
 import React, { useState } from "react";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Image as ImageIcon } from "lucide-react";
 
 function AddArtworkModal({ isOpen, onClose, etudiantId, onArtworkAdded }) {
   const [titre, setTitre] = useState("");
   const [categorie, setCategorie] = useState("Peinture");
   const [dimensions, setDimensions] = useState("");
   const [prix, setPrix] = useState("");
-  const [bgStyle, setBgStyle] = useState("bg-gradient-to-r from-zinc-900 to-stone-800"); // Style par défaut
+  
+  // NOUVEAUX ÉTATS : Pour gérer le fichier image et son aperçu à l'écran
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Quelques options de dégradés esthétiques et rectilignes pour le fond
-  const presets = [
-    { name: "Sombre Absolu", value: "bg-gradient-to-r from-zinc-900 to-stone-800" },
-    { name: "Nuit Bleue", value: "bg-gradient-to-r from-slate-900 to-zinc-800" },
-    { name: "Bronze Épuré", value: "bg-gradient-to-r from-zinc-800 to-zinc-600" },
-    { name: "Minimal Gris", value: "bg-gradient-to-r from-stone-400 to-stone-200" },
-  ];
-
   if (!isOpen) return null;
+
+  // Gérer le choix du fichier et créer une URL d'aperçu temporaire
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file)); // Crée un lien temporaire pour l'afficher dans la modale
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!imageFile) {
+      setMessage("Veuillez sélectionner une image pour votre œuvre.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
-    const nouvelleOeuvre = {
-      titre,
-      categorie,
-      dimensions: dimensions || "Format standard",
-      prix: prix ? `${prix} $` : "Sur devis",
-      bgStyle
-    };
+    // OBLIGATOIRE POUR L'UPLOAD : On emballe tout dans un objet FormData
+    const formData = new FormData();
+    formData.append("titre", titre);
+    formData.append("categorie", categorie);
+    formData.append("dimensions", dimensions || "Format standard");
+    formData.append("prix", prix ? `${prix} $` : "Sur devis");
+    formData.append("etudiantId", etudiantId);
+    formData.append("image", imageFile); // C'est ici que le fichier binaire est injecté
 
     try {
-      const response = await fetch(`http://localhost:8080/api/oeuvres/add/${etudiantId}`, {
+      // On attaque l'endpoint d'upload du contrôleur Spring Boot
+      const response = await fetch("http://localhost:8080/api/oeuvres/add", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(nouvelleOeuvre),
+        // ATTENTION : Ne surtout pas mettre de "Content-Type" header ici. 
+        // Le navigateur va le configurer tout seul en 'multipart/form-data' avec le bon boundary.
+        body: formData,
       });
 
       if (response.ok) {
         const data = await response.json();
-        onArtworkAdded(data); // Met à jour la liste des œuvres dans le Dashboard
+        onArtworkAdded(data); // Met à jour la liste dans le Dashboard
+        
         // Réinitialisation du formulaire
         setTitre("");
         setDimensions("");
         setPrix("");
-        onClose(); // Ferme la modale
+        setImageFile(null);
+        setImagePreview(null);
+        onClose(); 
       } else {
         setMessage("Erreur lors de la sauvegarde de l'œuvre.");
       }
@@ -70,7 +85,7 @@ function AddArtworkModal({ isOpen, onClose, etudiantId, onArtworkAdded }) {
 
         <div className="mb-6">
           <h3 className="text-xl font-light text-zinc-950 tracking-tight">Ajouter une création</h3>
-          <p className="text-zinc-400 text-xs mt-1">Publie une nouvelle œuvre dans ton catalogue et sur la galerie.</p>
+          <p className="text-zinc-400 text-xs mt-1">Publie une nouvelle œuvre originale dans ton catalogue d'artiste.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -112,27 +127,47 @@ function AddArtworkModal({ isOpen, onClose, etudiantId, onArtworkAdded }) {
             />
           </div>
 
+          {/* SÉLECTEUR DE FICHIER IMAGE ET RELEVÉ DE VUE */}
           <div>
-            <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Style Visuel (Aperçu)</label>
-            <div className="grid grid-cols-2 gap-2">
-              {presets.map((preset, idx) => (
-                <button
-                  key={idx} type="button" onClick={() => setBgStyle(preset.value)}
-                  className={`p-3 rounded text-left text-xs text-white ${preset.value} border-2 ${bgStyle === preset.value ? 'border-[#c5a880]' : 'border-transparent'} transition-all`}
-                >
-                  {preset.name}
-                </button>
-              ))}
+            <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Photographie de l'œuvre</label>
+            
+            <div className="mt-1 flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 rounded-lg p-4 bg-[#fafafa] hover:bg-zinc-50/50 transition-colors relative min-h-[140px]">
+              {imagePreview ? (
+                // Si une image est choisie, on affiche l'aperçu à l'intérieur
+                <div className="w-full flex flex-col items-center gap-2">
+                  <img src={imagePreview} alt="Aperçu" className="max-h-32 object-contain rounded border border-zinc-200" />
+                  <button 
+                    type="button" 
+                    onClick={() => { setImageFile(null); setImagePreview(null); }}
+                    className="text-xs text-red-500 hover:underline cursor-pointer"
+                  >
+                    Changer d'image
+                  </button>
+                </div>
+              ) : (
+                // Sinon, zone de dépôt classique cliquable
+                <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer py-4">
+                  <ImageIcon size={28} className="text-zinc-400 mb-2" />
+                  <span className="text-xs text-zinc-600 font-medium">Cliquez pour charger une image</span>
+                  <span className="text-[10px] text-zinc-400 mt-0.5">PNG, JPG jusqu'à 5 Mo</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleImageChange} 
+                    className="hidden" 
+                  />
+                </label>
+              )}
             </div>
           </div>
 
-          {message && <p className="text-red-500 text-xs">{message}</p>}
+          {message && <p className="text-red-500 text-xs font-medium">{message}</p>}
 
           <button 
             type="submit" disabled={loading}
-            className="w-full bg-zinc-950 hover:bg-zinc-900 text-white font-medium py-3 rounded text-sm flex items-center justify-center gap-2 mt-4 disabled:bg-zinc-400"
+            className="w-full bg-zinc-950 hover:bg-zinc-900 text-white font-medium py-3 rounded text-sm flex items-center justify-center gap-2 mt-4 disabled:bg-zinc-400 cursor-pointer"
           >
-            {loading ? "Enregistrement..." : "Mettre en galerie"} <Plus size={16} />
+            {loading ? "Téléchargement..." : "Mettre en galerie"} <Plus size={16} />
           </button>
         </form>
       </div>
