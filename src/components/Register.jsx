@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { Upload, ShieldCheck, ArrowRight, X } from 'lucide-react';
 
-// On ajoute la prop onRegisterSuccess ici
 function Register({ onBackToGallery, onRegisterSuccess }) {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState("");
   const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  
+  // CORRECTION : Ajout des états pour contrôler la soumission et bloquer les requêtes simultanées
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   // Gestion du Drag & Drop pour la carte d'étudiant
   const handleDrag = (e) => {
@@ -35,48 +38,54 @@ function Register({ onBackToGallery, onRegisterSuccess }) {
     }
   };
 
-   
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setErrorMessage(""); // On réinitialise l'erreur à chaque tentative
+    e.preventDefault();
+    setErrorMessage(""); 
+    
+    // Sécurité stricte anti-double clic
+    if (submitting) return; 
+    setSubmitting(true);
 
-  // Préparation de l'objet étudiant à envoyer au Backend
-  const etudiantData = {
-    nom: nom,
-    email: email,
-    carteEtudiantUrl: fileName || "carte_fictive.pdf" // En attendant de gérer le vrai upload de fichier
-  };
+    // Préparation de l'objet étudiant avec nettoyage des espaces (.trim())
+    const etudiantData = {
+      nom: nom.trim(),
+      email: email.trim().toLowerCase(),
+      carteEtudiantUrl: fileName || "carte_fictive.pdf"
+    };
 
-  try {
-    const response = await fetch("http://localhost:8080/api/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(etudiantData),
-    });
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(etudiantData),
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log("Étudiant créé avec succès dans MySQL !", data);
-      
-      // Succès ! On redirige l'étudiant vers son dashboard
-      onRegisterSuccess();
-    } else {
-      // Si Spring Boot renvoie une erreur (ex: Code 400 Bad Request)
-      const errorText = await response.text();
-      setErrorMessage(errorText);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Étudiant créé avec succès dans MySQL !", data);
+        
+        setSuccess(true);
+        // CORRECTION : On passe l'objet 'data' reçu pour que l'App.jsx récupère l'ID généré !
+        onRegisterSuccess(data);
+      } else {
+        // Si Spring Boot renvoie une erreur textuelle (ex: "Cette adresse email est déjà enregistrée.")
+        const errorText = await response.text();
+        setErrorMessage(errorText);
+        setSubmitting(false); // Réactive le bouton en cas d'erreur pour permettre de corriger
+      }
+    } catch (error) {
+      console.error("Erreur réseau :", error);
+      setErrorMessage("Impossible de joindre le serveur. Vérifie que Spring Boot est démarré.");
+      setSubmitting(false); // Réactive le bouton
     }
-  } catch (error) {
-    console.error("Erreur réseau :", error);
-    setErrorMessage("Impossible de joindre le serveur. Vérifie que Spring Boot est démarré.");
-  }
-};
+  };
 
   return (
     <div className="w-full min-h-screen bg-[#fafafa] flex flex-col lg:flex-row antialiased font-light pt-20 lg:pt-0">
       
-      {/* Partie Gauche : Identité visuelle épurée (Masquée sur mobile) */}
+      {/* Partie Gauche : Identité visuelle épurée */}
       <div className="hidden lg:flex lg:w-[40%] bg-zinc-950 p-12 flex-col justify-between text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-black opacity-50 z-0" />
         
@@ -181,13 +190,19 @@ function Register({ onBackToGallery, onRegisterSuccess }) {
                 )}
               </div>
             </div>
+
             {errorMessage && (
-              <p className="text-red-500 text-xs font-normal mt-2">{errorMessage}</p>
+              <p className="text-red-500 text-xs font-normal mt-2">⚠️ {errorMessage}</p>
             )}
 
-            {/* Bouton Soumettre - Déclenche handleSubmit */}
-            <button type="submit" className="w-full bg-zinc-950 hover:bg-zinc-900 text-white font-medium py-3.5 rounded transition-all text-sm flex items-center justify-center gap-2 mt-8 shadow-sm cursor-pointer">
-              Soumettre pour validation <ArrowRight size={16} />
+            {/* Bouton Soumettre Épuré et Bloqué en chargement */}
+            <button
+              type="submit"
+              disabled={submitting || success}
+              className="w-full bg-zinc-950 text-white hover:bg-zinc-900 disabled:opacity-50 transition-all text-sm font-medium py-3 rounded flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {submitting ? "Création de votre espace..." : "Finaliser l'inscription"}
+              {!submitting && <ArrowRight size={16} />}
             </button>
 
             {/* Lien Retour */}

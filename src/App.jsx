@@ -18,6 +18,10 @@ function App() {
 
   // 2. EFFET : Chargement dynamique de la Galerie depuis Spring Boot
   useEffect(() => {
+    // SÉCURITÉ : On ne charge la galerie publique QUE si l'utilisateur est sur la vue galerie.
+    // Cela évite de lancer des requêtes inutiles ou d'entrer en conflit avec les chargements du dashboard.
+    if (view !== "gallery") return;
+
     setLoading(true);
     fetch("http://localhost:8080/api/oeuvres/all")
       .then((res) => {
@@ -32,7 +36,7 @@ function App() {
         console.error("Erreur Galerie:", err);
         setLoading(false);
       });
-  }, [view]); // Recharge la galerie quand on change de vue (ex: retour du dashboard)
+  }, [view]); // Sécurisé : s'exécute uniquement si on retourne explicitement à la galerie
 
   // Filtrage basé sur les catégories de l'entité MySQL (art.categorie)
   const filteredArtworks = activeCategory === "Tous" 
@@ -45,15 +49,29 @@ function App() {
       <Register 
         onBackToGallery={() => setView("gallery")} 
         onRegisterSuccess={(data) => {
-          setUser(data);       // Sauvegarde le profil réel
-          setView("dashboard"); // Redirection Espace Étudiant
+          console.log("Données reçues de l'inscription :", data);
+          if (data && data.id) {
+            setUser(data);       // Sauvegarde le profil réel complet (ID inclus)
+            setView("dashboard"); // Redirection Espace Étudiant
+          } else {
+            console.error("L'étudiant a été créé mais aucun ID valide n'a été retourné par Spring Boot.");
+          }
         }} 
       />
     );
   }
 
-  // 4. ROUTING : Dashboard Étudiant
+  // 4. ROUTING : Dashboard Étudiant (Protégé avec vérification de l'ID)
   if (view === "dashboard") {
+    // Si l'état user n'est pas encore synchronisé, on affiche un écran d'attente propre au lieu de crash
+    if (!user || !user.id) {
+      return (
+        <div className="w-full min-h-screen flex items-center justify-center bg-[#fafafa]">
+          <p className="text-sm text-zinc-400 font-light animate-pulse">Initialisation de votre atelier d'artiste...</p>
+        </div>
+      );
+    }
+
     return (
       <StudentDashboard 
         user={user} 
@@ -69,11 +87,13 @@ function App() {
     <div className="w-full min-h-screen bg-[#fafafa] text-zinc-900 antialiased font-light">
       
       {/* Navbar réactive */}
-      <Navbar 
-        onNavigate={setView} 
-        onOpenLogin={() => setIsLoginOpen(true)} 
-        user={user} 
-      />
+      <nav>
+        <Navbar 
+          onNavigate={setView} 
+          onOpenLogin={() => setIsLoginOpen(true)} 
+          user={user} 
+        />
+      </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-20">
         
@@ -130,7 +150,7 @@ function App() {
                 key={art.id} 
                 className="group flex flex-col sm:flex-row bg-white border border-zinc-200/60 p-4 rounded-lg transition-all duration-300 hover:border-zinc-300 hover:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.02)]"
               >
-                {/* Visuel de l'œuvre (Dégradé choisi par l'étudiant) */}
+                {/* Visuel de l'œuvre */}
                 <div className="w-full sm:w-48 aspect-[3/2] sm:aspect-square md:aspect-[4/3] flex-shrink-0 rounded bg-zinc-100 overflow-hidden relative">
                   <div className={`w-full h-full ${art.bgStyle || 'bg-gradient-to-r from-zinc-900 to-stone-800'} transition-transform duration-700 ease-out group-hover:scale-102`} />
                   <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider text-zinc-600 border border-zinc-200/20">
