@@ -16,7 +16,7 @@ function StudentDashboard({ onLogout, user }) {
   useEffect(() => {
     if (user?.id) {
       setLoading(true);
-      fetch(`http://localhost:8080/api/oeuvres/etudiant/${user.id}`)
+      fetch(`https://artkaba1-1.onrender.com/api/oeuvres/etudiant/${user.id}`)
         .then((res) => {
           if (res.ok) return res.json();
           throw new Error("Impossible de charger les œuvres");
@@ -36,7 +36,7 @@ function StudentDashboard({ onLogout, user }) {
   useEffect(() => {
     if (activeTab === "messages" && user?.id) {
       setLoadingMessages(true);
-      fetch(`http://localhost:8080/api/messages/etudiant/${user.id}`)
+      fetch(`https://artkaba1-1.onrender.com/api/messages/etudiant/${user.id}`)
         .then((res) => {
           if (res.ok) return res.json();
           throw new Error("Impossible de charger la boîte de réception.");
@@ -57,7 +57,7 @@ function StudentDashboard({ onLogout, user }) {
     if (!user || !user.id) return;
 
     try {
-      const response = await fetch(`http://localhost:8080/api/etudiants/${user.id}/activer`, {
+      const response = await fetch(`https://artkaba1-1.onrender.com/api/etudiants/${user.id}/activer`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -92,7 +92,7 @@ function StudentDashboard({ onLogout, user }) {
   const handleDeleteArtwork = async (id) => {
     if (window.confirm("Es-tu sûr de vouloir retirer cette œuvre de la galerie ?")) {
       try {
-        const response = await fetch(`http://localhost:8080/api/oeuvres/delete/${id}`, {
+        const response = await fetch(`https://artkaba1-1.onrender.com/api/oeuvres/delete/${id}`, {
           method: "DELETE",
         });
         if (response.ok) {
@@ -116,7 +116,7 @@ function StudentDashboard({ onLogout, user }) {
       const updatedData = { ...art, titre: nouveauTitre, prix: nouveauPrix };
 
       try {
-        const response = await fetch(`http://localhost:8080/api/oeuvres/update/${art.id}`, {
+        const response = await fetch(`https://artkaba1-1.onrender.com/api/oeuvres/update/${art.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updatedData)

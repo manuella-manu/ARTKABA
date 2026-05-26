@@ -23,7 +23,7 @@ function ContactModal({ isOpen, onClose, artwork }) {
     };
 
     try {
-      const response = await fetch("http://localhost:8080/api/messages/send", {
+      const response = await fetch("https://artkaba1-1.onrender.com/api/messages/send", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

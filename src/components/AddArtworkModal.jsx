@@ -47,7 +47,7 @@ function AddArtworkModal({ isOpen, onClose, etudiantId, onArtworkAdded }) {
 
     try {
       // On attaque l'endpoint d'upload du contrôleur Spring Boot
-      const response = await fetch("http://localhost:8080/api/oeuvres/add", {
+      const response = await fetch("https://artkaba1-1.onrender.com/api/oeuvres/add", {
         method: "POST",
         // ATTENTION : Ne surtout pas mettre de "Content-Type" header ici. 
         // Le navigateur va le configurer tout seul en 'multipart/form-data' avec le bon boundary.

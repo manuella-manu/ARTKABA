@@ -32,7 +32,7 @@ function App() {
     if (view !== "gallery") return;
 
     setLoading(true);
-    fetch("http://localhost:8080/api/oeuvres/all")
+    fetch("https://artkaba1-1.onrender.com/api/oeuvres/all")
       .then((res) => {
         if (res.ok) return res.json();
         throw new Error("Impossible de récupérer la galerie.");
@@ -157,7 +157,7 @@ function App() {
                   <div className="w-full sm:w-48 aspect-[3/2] sm:aspect-square md:aspect-[4/3] flex-shrink-0 rounded bg-zinc-50 overflow-hidden relative border border-zinc-100">
                     {art.imageUrl ? (
                       <img 
-                        src={`http://localhost:8080${art.imageUrl}`} 
+                        src={`https://artkaba1-1.onrender.com${art.imageUrl}`} 
                         alt={art.titre}
                         className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                         onError={(e) => {
